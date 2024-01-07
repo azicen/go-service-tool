@@ -5,6 +5,8 @@ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 h1:YLtO71vCjJRCBcrPMtQ9nqBsqpA1
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1/go.mod h1:hyedUtir6IdtD/7lIxGeCxkaw7y45JueMRL4DIyJDKs=
 github.com/ethereum/go-ethereum v1.13.8 h1:1od+thJel3tM52ZUNQwvpYOeRHlbkVFZ5S8fhi0Lgsg=
 github.com/ethereum/go-ethereum v1.13.8/go.mod h1:sc48XYQxCzH3fG9BcrXCOOgQk2JfZzNAmIKnceogzsA=
+github.com/go-kratos/kratos/v2 v2.7.2 h1:WVPGFNLKpv+0odMnCPxM4ZHa2hy9I5FOnwpG3Vv4w5c=
+github.com/go-kratos/kratos/v2 v2.7.2/go.mod h1:rppuc8+pGL2UtXA29bgFHWKqaaF6b6GB2XIYiDvFBRk=
 github.com/holiman/uint256 v1.2.4 h1:jUc4Nk8fm9jZabQuqr2JzednajVmBpC+oiTiXZJEApU=
 github.com/holiman/uint256 v1.2.4/go.mod h1:EOMSn4q6Nyt9P6efbI3bueV4e1b3dGlUCXeiRV4ng7E=
 github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD/E=
