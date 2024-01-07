@@ -1,4 +1,4 @@
-package database
+package grom
 
 import (
 	"context"
@@ -13,9 +13,9 @@ type GormLoggerHelper struct {
 	*log.Helper
 }
 
-// NewLoggerHelper 创建一个新的 GormLogger 实例
-func NewLoggerHelper(logger log.Logger) *GormLoggerHelper {
-	h := log.NewHelper(logger)
+// NewLoggerHelper 创建一个新的 NacosLoggerHelper 实例
+func NewLoggerHelper(l log.Logger) *GormLoggerHelper {
+	h := log.NewHelper(l)
 	return &GormLoggerHelper{h}
 }
 
