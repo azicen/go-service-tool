@@ -6,14 +6,23 @@ import (
 	"gorm.io/gorm"
 )
 
-type BaseModel struct {
-	ID    uint64    `json:"id" gorm:"column:id; primaryKey"`
+type IDModel struct {
+	ID uint64 `json:"id" gorm:"column:id; primaryKey"`
+}
+
+type MetadataTimeModel struct {
 	Ctime time.Time `json:"ctime" gorm:"column:ctime"` // 状态最后一次更改
 	Mtime time.Time `json:"mtime" gorm:"column:mtime"` // 数据最后一次修改
 }
 
 type DeleteModel struct {
-	Delete bool `json:"delete" gorm:"column:delete"` // 数据软删除
+	Delete bool `json:"del" gorm:"column:del"` // 数据软删除
+}
+
+type BaseModel struct {
+	IDModel
+	MetadataTimeModel
+	DeleteModel
 }
 
 func RegisterCallbacks(db *gorm.DB) {
@@ -57,7 +66,7 @@ func updateCallback(db *gorm.DB) {
 
 func deleteCallback(db *gorm.DB) {
 	if db.Statement.Schema != nil {
-		modifyDeleteField := db.Statement.Schema.LookUpField("delete")
+		modifyDeleteField := db.Statement.Schema.LookUpField("del")
 		if modifyDeleteField != nil {
 			_ = modifyDeleteField.Set(db.Statement.Context, db.Statement.ReflectValue, true)
 		}
