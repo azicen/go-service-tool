@@ -3,11 +3,25 @@ package database
 import (
 	"time"
 
+	"github.com/cypunsource/cypunsource-tool/uuid"
 	"gorm.io/gorm"
 )
 
 type IDModel struct {
 	ID uint64 `json:"id" gorm:"column:id; primaryKey"`
+}
+
+type UniqueUUIDModel struct {
+	UniqueUUID *uuid.UUID `json:"unique_uuid" gorm:"column:unique_uuid; uniqueIndex; not null"`
+}
+
+func (model *UniqueUUIDModel) BeforeCreate(tx *gorm.DB) (err error) {
+	if model.UniqueUUID == nil {
+		var ou uuid.UUID
+		ou, err = uuid.NewOrderedUUID()
+		model.UniqueUUID = &ou
+	}
+	return
 }
 
 type MetadataTimeModel struct {
