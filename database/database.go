@@ -12,16 +12,7 @@ type IDModel struct {
 }
 
 type UniqueUUIDModel struct {
-	UniqueUUID *uuid.UUID `json:"unique_uuid" gorm:"column:unique_uuid; uniqueIndex; not null"`
-}
-
-func (model *UniqueUUIDModel) BeforeCreate(tx *gorm.DB) (err error) {
-	if model.UniqueUUID == nil {
-		var ou uuid.UUID
-		ou, err = uuid.NewOrderedUUID()
-		model.UniqueUUID = &ou
-	}
-	return
+	UniqueUUID uuid.UUID `json:"unique_uuid" gorm:"column:unique_uuid; uniqueIndex; not null"`
 }
 
 type MetadataTimeModel struct {
@@ -64,6 +55,11 @@ func createCallback(db *gorm.DB) {
 		modifyTimeField := db.Statement.Schema.LookUpField("mtime")
 		if modifyTimeField != nil {
 			_ = modifyTimeField.Set(db.Statement.Context, db.Statement.ReflectValue, nowTime)
+		}
+		uniqueUUIDField := db.Statement.Schema.LookUpField("unique_uuid")
+		if uniqueUUIDField != nil {
+			ou, _ := uuid.NewOrderedUUID()
+			_ = uniqueUUIDField.Set(db.Statement.Context, db.Statement.ReflectValue, ou)
 		}
 	}
 }
