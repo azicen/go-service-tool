@@ -16,7 +16,7 @@ type MetadataTimeModel struct {
 }
 
 type DeleteModel struct {
-	Delete bool `json:"del" gorm:"column:del"` // 数据软删除
+	Delete bool `json:"deleted" gorm:"column:deleted"` // 数据软删除
 }
 
 type BaseModel struct {
@@ -66,7 +66,7 @@ func updateCallback(db *gorm.DB) {
 
 func deleteCallback(db *gorm.DB) {
 	if db.Statement.Schema != nil {
-		modifyDeleteField := db.Statement.Schema.LookUpField("del")
+		modifyDeleteField := db.Statement.Schema.LookUpField("deleted")
 		if modifyDeleteField != nil {
 			_ = modifyDeleteField.Set(db.Statement.Context, db.Statement.ReflectValue, true)
 		}
