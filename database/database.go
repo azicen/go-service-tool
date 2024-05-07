@@ -3,7 +3,7 @@ package database
 import (
 	"time"
 
-	"github.com/cypunsource/cypunsource-tool/uuid"
+	"github.com/azicen/go-service-tool/uuid"
 	"gorm.io/gorm"
 )
 
