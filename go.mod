@@ -1,4 +1,4 @@
-module github.com/cypunsource/cypunsource-tool
+module github.com/azicen/go-service-tool
 
 go 1.21.4
 
