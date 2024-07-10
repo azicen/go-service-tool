@@ -8,39 +8,39 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// GormLoggerHelper GORM Logger 接口的实现
-type GormLoggerHelper struct {
+// GormLogger GORM 日志接口的实现
+type GormLogger struct {
 	*log.Helper
 }
 
-// NewLoggerHelper 创建一个新的 NacosLoggerHelper 实例
-func NewLoggerHelper(l log.Logger) *GormLoggerHelper {
+// NewLogger 创建一个新的日志实例
+func NewLogger(l log.Logger) *GormLogger {
 	h := log.NewHelper(l)
-	return &GormLoggerHelper{h}
+	return &GormLogger{h}
 }
 
 // LogMode 设置日志级别
-func (g *GormLoggerHelper) LogMode(level logger.LogLevel) logger.Interface {
+func (g *GormLogger) LogMode(level logger.LogLevel) logger.Interface {
 	return g
 }
 
 // Info 日志信息级别
-func (g *GormLoggerHelper) Info(ctx context.Context, msg string, data ...interface{}) {
+func (g *GormLogger) Info(ctx context.Context, msg string, data ...interface{}) {
 	g.Infof(msg, data...)
 }
 
 // Warn 日志警告级别
-func (g *GormLoggerHelper) Warn(ctx context.Context, msg string, data ...interface{}) {
+func (g *GormLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
 	g.Warnf(msg, data...)
 }
 
 // Error 日志错误级别
-func (g *GormLoggerHelper) Error(ctx context.Context, msg string, data ...interface{}) {
+func (g *GormLogger) Error(ctx context.Context, msg string, data ...interface{}) {
 	g.Errorf(msg, data...)
 }
 
 // Trace 用于跟踪 SQL 执行和记录慢查询
-func (g *GormLoggerHelper) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
+func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
 	elapsed := time.Since(begin)
 	sql, rows := fc()
 
