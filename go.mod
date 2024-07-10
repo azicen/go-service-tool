@@ -18,6 +18,7 @@ require (
 	github.com/go-kratos/kratos/v2 v2.7.2
 	github.com/google/uuid v1.6.0
 	github.com/holiman/uint256 v1.2.4 // indirect
+	github.com/simukti/sqldb-logger v0.0.0-20230108155151-646c1a075551
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
