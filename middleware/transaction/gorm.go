@@ -10,7 +10,7 @@ import (
 type GORMTransactionKey struct{}
 
 type GORMTransaction struct {
-	tx *gorm.DB
+	dbTx *gorm.DB
 }
 
 // Commit Gorm事务提交处理函数
@@ -20,11 +20,16 @@ func (tx *GORMTransaction) Commit(ctx context.Context) error {
 		return nil
 	}
 
-	g, ok := orch.tx[GORMTransactionKey{}].(*GORMTransaction)
+	t, ok := orch.Tx.Get(GORMTransactionKey{})
 	if !ok {
 		return nil
 	}
-	return g.tx.Commit().Error
+
+	gormTx, ok := t.(*GORMTransaction)
+	if !ok {
+		return nil
+	}
+	return gormTx.dbTx.Commit().Error
 }
 
 // Rollback GORM事务回滚处理函数
@@ -34,11 +39,16 @@ func (tx *GORMTransaction) Rollback(ctx context.Context) error {
 		return nil
 	}
 
-	g, ok := orch.tx[GORMTransactionKey{}].(*GORMTransaction)
+	t, ok := orch.Tx.Get(GORMTransactionKey{})
 	if !ok {
 		return nil
 	}
-	return g.tx.Rollback().Error
+
+	gormTx, ok := t.(*GORMTransaction)
+	if !ok {
+		return nil
+	}
+	return gormTx.dbTx.Rollback().Error
 }
 
 func GORMTx(ctx context.Context, db *gorm.DB) *gorm.DB {
@@ -49,20 +59,22 @@ func GORMTx(ctx context.Context, db *gorm.DB) *gorm.DB {
 	}
 
 	// 从事务协调器中获取gorm事务
-	g, ok := orch.tx[GORMTransactionKey{}].(*GORMTransaction)
+	t, ok := orch.Tx.Get(GORMTransactionKey{})
 	if !ok {
 		// 不存在则开始新的GORM事务
-		g = &GORMTransaction{
-			tx: db.Begin(),
+		t = &GORMTransaction{
+			dbTx: db.Begin(),
 		}
+		orch.Tx.Set(GORMTransactionKey{}, t)
 	}
-	return g.tx
+	gormTx, _ := t.(*GORMTransaction)
+	return gormTx.dbTx
 }
 
 func AddGORMTransaction(db *gorm.DB) OrchestratorOption {
 	return func(o *Orchestrator) {
-		o.tx[GORMTransactionKey{}] = &GORMTransaction{
-			tx: db.Begin(),
-		}
+		o.Tx.Set(GORMTransactionKey{}, &GORMTransaction{
+			dbTx: db.Begin(),
+		})
 	}
 }

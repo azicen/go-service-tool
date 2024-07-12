@@ -10,7 +10,7 @@ import (
 type SqlxTransactionKey struct{}
 
 type SqlxTransaction struct {
-	tx *sqlx.Tx
+	dbTx *sqlx.Tx
 }
 
 // Commit Sqlx事务提交处理函数
@@ -20,11 +20,16 @@ func (tx *SqlxTransaction) Commit(ctx context.Context) error {
 		return nil
 	}
 
-	g, ok := orch.tx[SqlxTransactionKey{}].(*SqlxTransaction)
+	t, ok := orch.Tx.Get(SqlxTransactionKey{})
 	if !ok {
 		return nil
 	}
-	return g.tx.Commit()
+
+	sqlxTx, ok := t.(*SqlxTransaction)
+	if !ok {
+		return nil
+	}
+	return sqlxTx.dbTx.Commit()
 }
 
 // Rollback Sqlx事务回滚处理函数
@@ -34,11 +39,16 @@ func (tx *SqlxTransaction) Rollback(ctx context.Context) error {
 		return nil
 	}
 
-	g, ok := orch.tx[SqlxTransactionKey{}].(*SqlxTransaction)
+	t, ok := orch.Tx.Get(SqlxTransactionKey{})
 	if !ok {
 		return nil
 	}
-	return g.tx.Rollback()
+
+	sqlxTx, ok := t.(*SqlxTransaction)
+	if !ok {
+		return nil
+	}
+	return sqlxTx.dbTx.Rollback()
 }
 
 func SqlxTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, error) {
@@ -49,18 +59,21 @@ func SqlxTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, error) {
 	}
 
 	// 从事务协调器中获取Sqlx事务
-	g, ok := orch.tx[SqlxTransactionKey{}].(*SqlxTransaction)
+	t, ok := orch.Tx.Get(SqlxTransactionKey{})
 	if !ok {
 		// 不存在则开始新的Sqlx事务
 		tx, err := db.Beginx()
 		if err != nil {
 			return tx, err
 		}
-		g = &SqlxTransaction{
-			tx: tx,
+		t = &SqlxTransaction{
+			dbTx: tx,
 		}
+		orch.Tx.Set(SqlxTransactionKey{}, t)
 	}
-	return g.tx, nil
+
+	sqlxTx, _ := t.(*SqlxTransaction)
+	return sqlxTx.dbTx, nil
 }
 
 func AddSqlxTransaction(db *sqlx.DB) OrchestratorOption {
@@ -69,8 +82,8 @@ func AddSqlxTransaction(db *sqlx.DB) OrchestratorOption {
 		if err != nil {
 			return
 		}
-		o.tx[SqlxTransactionKey{}] = &SqlxTransaction{
-			tx: tx,
-		}
+		o.Tx.Set(SqlxTransactionKey{}, &SqlxTransaction{
+			dbTx: tx,
+		})
 	}
 }

@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 
+	"github.com/elliotchance/orderedmap/v2"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
@@ -18,14 +19,14 @@ type OrchestratorContextKey struct{}
 
 // Orchestrator 事务协调器
 type Orchestrator struct {
-	tx map[struct{}]Transaction
+	Tx *orderedmap.OrderedMap[struct{}, Transaction] // 有序的 map[struct{}]Transaction
 
 	log *log.Helper
 }
 
 func newOrchestrator() *Orchestrator {
 	return &Orchestrator{
-		tx: make(map[struct{}]Transaction),
+		Tx: orderedmap.NewOrderedMap[struct{}, Transaction](),
 	}
 }
 
@@ -42,7 +43,7 @@ func Logger(logger log.Logger) OrchestratorOption {
 // AddTransaction 初始化时立刻添加事务
 func AddTransaction(key struct{}, tx Transaction) OrchestratorOption {
 	return func(o *Orchestrator) {
-		o.tx[key] = tx
+		o.Tx.Set(key, tx)
 	}
 }
 
@@ -63,14 +64,14 @@ func Middleware(opts ...OrchestratorOption) middleware.Middleware {
 
 			if err == nil {
 				// 提交事务
-				for _, tx := range orch.tx {
-					err := tx.Commit(ctx)
+				for el := orch.Tx.Front(); el != nil; el = el.Next() {
+					err := el.Value.Commit(ctx)
 					orch.log.Error(err)
 				}
 			} else {
 				// 回滚事务
-				for _, tx := range orch.tx {
-					err := tx.Rollback(ctx)
+				for el := orch.Tx.Front(); el != nil; el = el.Next() {
+					err := el.Value.Rollback(ctx)
 					orch.log.Error(err)
 				}
 			}
