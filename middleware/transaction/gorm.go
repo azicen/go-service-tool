@@ -15,10 +15,7 @@ type GORMTransaction struct {
 
 // Commit Gorm事务提交处理函数
 func (tx *GORMTransaction) Commit(ctx context.Context) error {
-	orch, ok := ctx.Value(OrchestratorContextKey{}).(*Orchestrator)
-	if !ok {
-		return nil
-	}
+	orch := GetOrchestratorFromContext(ctx)
 
 	t, ok := orch.Tx.Get(GORMTransactionKey{})
 	if !ok {
@@ -34,10 +31,7 @@ func (tx *GORMTransaction) Commit(ctx context.Context) error {
 
 // Rollback GORM事务回滚处理函数
 func (tx *GORMTransaction) Rollback(ctx context.Context) error {
-	orch, ok := ctx.Value(OrchestratorContextKey{}).(*Orchestrator)
-	if !ok {
-		return nil
-	}
+	orch := GetOrchestratorFromContext(ctx)
 
 	t, ok := orch.Tx.Get(GORMTransactionKey{})
 	if !ok {
@@ -52,11 +46,7 @@ func (tx *GORMTransaction) Rollback(ctx context.Context) error {
 }
 
 func GORMTx(ctx context.Context, db *gorm.DB) *gorm.DB {
-	// 从上下文中获取事务协调器
-	orch, ok := ctx.Value(OrchestratorContextKey{}).(*Orchestrator)
-	if !ok {
-		return db.Begin()
-	}
+	orch := GetOrchestratorFromContext(ctx)
 
 	// 从事务协调器中获取gorm事务
 	t, ok := orch.Tx.Get(GORMTransactionKey{})
@@ -71,10 +61,13 @@ func GORMTx(ctx context.Context, db *gorm.DB) *gorm.DB {
 	return gormTx.dbTx
 }
 
-func AddGORMTransaction(db *gorm.DB) OrchestratorOption {
-	return func(o *Orchestrator) {
-		o.Tx.Set(GORMTransactionKey{}, &GORMTransaction{
-			dbTx: db.Begin(),
-		})
-	}
+func GORMTransactionHandler(db *gorm.DB) ManagerOption {
+	return AddInitTransactionHandler(
+		func(o *Orchestrator) {
+			tx := db.Begin()
+			o.Tx.Set(GORMTransactionKey{}, &GORMTransaction{
+				dbTx: tx,
+			})
+		},
+	)
 }

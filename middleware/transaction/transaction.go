@@ -17,11 +17,10 @@ type Transaction interface {
 // OrchestratorContextKey 上下文的事务协调器唯一键
 type OrchestratorContextKey struct{}
 
-// Orchestrator 事务协调器
+// Orchestrator 协调器
 type Orchestrator struct {
-	Tx *orderedmap.OrderedMap[struct{}, Transaction] // 有序的 map[struct{}]Transaction
-
-	log *log.Helper
+	// Tx 有序的 map[struct{}]Transaction
+	Tx *orderedmap.OrderedMap[struct{}, Transaction]
 }
 
 func newOrchestrator() *Orchestrator {
@@ -30,32 +29,61 @@ func newOrchestrator() *Orchestrator {
 	}
 }
 
-// OrchestratorOption 事务协调器选项设置
-type OrchestratorOption func(*Orchestrator)
+// GetOrchestratorFromContext 从上下文中获取事务协调器
+func GetOrchestratorFromContext(ctx context.Context) *Orchestrator {
+	orch, ok := ctx.Value(OrchestratorContextKey{}).(*Orchestrator)
+	if !ok {
+		// 不应该出现的情况
+		panic("")
+	}
+	return orch
+}
+
+// manager 事务协调器
+type manager struct {
+	log         *log.Helper
+	initHandler []InitTransactionHandler
+}
+
+func newManager() *manager {
+	return &manager{
+		initHandler: make([]InitTransactionHandler, 0, 10),
+	}
+}
+
+// ManagerOption 事务管理器选项设置
+type ManagerOption func(*manager)
 
 // Logger 设置事务协调器日志
-func Logger(logger log.Logger) OrchestratorOption {
-	return func(o *Orchestrator) {
-		o.log = log.NewHelper(logger)
+func Logger(logger log.Logger) ManagerOption {
+	return func(m *manager) {
+		m.log = log.NewHelper(logger)
 	}
 }
 
-// AddTransaction 初始化时立刻添加事务
-func AddTransaction(key struct{}, tx Transaction) OrchestratorOption {
-	return func(o *Orchestrator) {
-		o.Tx.Set(key, tx)
+// 初始化事务处理器函数
+type InitTransactionHandler func(*Orchestrator)
+
+// AddInitTransactionHandler 初始化时立刻添加事务
+func AddInitTransactionHandler(f InitTransactionHandler) ManagerOption {
+	return func(m *manager) {
+		m.initHandler = append(m.initHandler, f)
 	}
 }
 
-// Middleware 用于处理事务提交和回滚的中间件
-// Option 采用先进先出的形式
-func Middleware(opts ...OrchestratorOption) middleware.Middleware {
-	orch := newOrchestrator()
+// Middleware 用于处理事务提交和回滚的中间件。
+// opts: ManagerOption 采用先进先出的形式
+func Middleware(opts ...ManagerOption) middleware.Middleware {
+	m := newManager()
 	for _, o := range opts {
-		o(orch)
+		o(m)
 	}
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
+			orch := newOrchestrator()
+			for _, h := range m.initHandler {
+				h(orch)
+			}
 			// 事务管理器添加到上下文
 			ctx = context.WithValue(ctx, OrchestratorContextKey{}, orch)
 
@@ -66,13 +94,13 @@ func Middleware(opts ...OrchestratorOption) middleware.Middleware {
 				// 提交事务
 				for el := orch.Tx.Front(); el != nil; el = el.Next() {
 					err := el.Value.Commit(ctx)
-					orch.log.Error(err)
+					m.log.Error(err)
 				}
 			} else {
 				// 回滚事务
 				for el := orch.Tx.Front(); el != nil; el = el.Next() {
 					err := el.Value.Rollback(ctx)
-					orch.log.Error(err)
+					m.log.Error(err)
 				}
 			}
 			return
