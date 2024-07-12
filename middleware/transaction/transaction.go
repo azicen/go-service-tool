@@ -3,48 +3,75 @@ package transaction
 import (
 	"context"
 
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
 
-// HandlerFunc 事务中间件的处理函数
-type HandlerFunc func(ctx context.Context)
+// Transaction 事务
+type Transaction interface {
+	Commit(context.Context) error
+	Rollback(context.Context) error
+}
 
-// Option 事务中间件的Option
-type Option func() (commit HandlerFunc, rollback HandlerFunc)
+// OrchestratorContextKey 上下文的事务协调器唯一键
+type OrchestratorContextKey struct{}
 
-// TransactionMap 事务集用于存放各种事务状态
-type TransactionMap map[struct{}]any
+// Orchestrator 事务协调器
+type Orchestrator struct {
+	tx map[struct{}]Transaction
 
-// TransactionContextKey 上下文的事务唯一键
-type TransactionContextKey struct{}
+	log log.Helper
+}
 
-// Transaction 用于处理事务提交和回滚的中间件
+func newOrchestrator() *Orchestrator {
+	return &Orchestrator{
+		tx: make(map[struct{}]Transaction),
+	}
+}
+
+// OrchestratorOption 事务协调器选项设置
+type OrchestratorOption func(*Orchestrator)
+
+// Logger 设置事务协调器日志
+func Logger(logger log.Helper) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.log = logger
+	}
+}
+
+// AddTransaction 初始化时立刻添加事务
+func AddTransaction(key struct{}, tx Transaction) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.tx[key] = tx
+	}
+}
+
+// Middleware 用于处理事务提交和回滚的中间件
 // Option 采用先进先出的形式
-func Transaction(opts ...Option) middleware.Middleware {
-	commitList := make([]HandlerFunc, len(opts))
-	rollbackList := make([]HandlerFunc, len(opts))
+func Middleware(opts ...OrchestratorOption) middleware.Middleware {
+	orch := newOrchestrator()
 	for _, o := range opts {
-		commit, rollback := o()
-		commitList = append(commitList, commit)
-		rollbackList = append(rollbackList, rollback)
+		o(orch)
 	}
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
-			// 初始化事务
-			ctx = context.WithValue(ctx, TransactionContextKey{}, make(TransactionMap))
+			// 事务管理器添加到上下文
+			ctx = context.WithValue(ctx, OrchestratorContextKey{}, orch)
 
 			// 传递处理
 			reply, err = handler(ctx, req)
 
 			if err == nil {
 				// 提交事务
-				for _, f := range commitList {
-					f(ctx)
+				for _, tx := range orch.tx {
+					err := tx.Commit(ctx)
+					orch.log.Error(err)
 				}
 			} else {
 				// 回滚事务
-				for _, f := range rollbackList {
-					f(ctx)
+				for _, tx := range orch.tx {
+					err := tx.Rollback(ctx)
+					orch.log.Error(err)
 				}
 			}
 			return
