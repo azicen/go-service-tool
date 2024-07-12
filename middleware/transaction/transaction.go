@@ -20,7 +20,7 @@ type OrchestratorContextKey struct{}
 type Orchestrator struct {
 	tx map[struct{}]Transaction
 
-	log log.Helper
+	log *log.Helper
 }
 
 func newOrchestrator() *Orchestrator {
@@ -33,9 +33,9 @@ func newOrchestrator() *Orchestrator {
 type OrchestratorOption func(*Orchestrator)
 
 // Logger 设置事务协调器日志
-func Logger(logger log.Helper) OrchestratorOption {
+func Logger(logger log.Logger) OrchestratorOption {
 	return func(o *Orchestrator) {
-		o.log = logger
+		o.log = log.NewHelper(logger)
 	}
 }
 
