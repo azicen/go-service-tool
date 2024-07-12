@@ -88,22 +88,31 @@ func Middleware(opts ...ManagerOption) middleware.Middleware {
 			ctx = context.WithValue(ctx, OrchestratorContextKey{}, orch)
 
 			// 传递处理
-			reply, err = handler(ctx, req)
-
-			if err == nil {
-				// 提交事务
-				for el := orch.Tx.Front(); el != nil; el = el.Next() {
-					err := el.Value.Commit(ctx)
-					m.log.Error(err)
-				}
-			} else {
-				// 回滚事务
-				for el := orch.Tx.Front(); el != nil; el = el.Next() {
-					err := el.Value.Rollback(ctx)
-					m.log.Error(err)
-				}
-			}
-			return
+			return handler(ctx, req)
 		}
 	}
+}
+
+// Commit 提交事务
+func Commit(ctx context.Context) error {
+	orch := GetOrchestratorFromContext(ctx)
+	for el := orch.Tx.Front(); el != nil; el = el.Next() {
+		err := el.Value.Commit(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Rollback 回滚事务
+func Rollback(ctx context.Context) error {
+	orch := GetOrchestratorFromContext(ctx)
+	for el := orch.Tx.Front(); el != nil; el = el.Next() {
+		err := el.Value.Rollback(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
