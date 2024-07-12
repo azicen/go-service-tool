@@ -66,8 +66,8 @@ func SqlxTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, error) {
 	return sqlxTx.dbTx, nil
 }
 
-func SqlxTransactionHandler(db *sqlx.DB) ManagerOption {
-	return AddInitTransactionHandler(
+func Sqlx(db *sqlx.DB) ManagerOption {
+	return AddInitHandler(
 		func(o *Orchestrator) {
 			tx, err := db.Beginx()
 			if err != nil {

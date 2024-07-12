@@ -61,8 +61,8 @@ func GORMTx(ctx context.Context, db *gorm.DB) *gorm.DB {
 	return gormTx.dbTx
 }
 
-func GORMTransactionHandler(db *gorm.DB) ManagerOption {
-	return AddInitTransactionHandler(
+func GORM(db *gorm.DB) ManagerOption {
+	return AddInitHandler(
 		func(o *Orchestrator) {
 			tx := db.Begin()
 			o.Tx.Set(GORMTransactionKey{}, &GORMTransaction{

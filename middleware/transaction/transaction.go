@@ -42,12 +42,12 @@ func GetOrchestratorFromContext(ctx context.Context) *Orchestrator {
 // manager 事务协调器
 type manager struct {
 	log         *log.Helper
-	initHandler []InitTransactionHandler
+	initHandler []InitHandler
 }
 
 func newManager() *manager {
 	return &manager{
-		initHandler: make([]InitTransactionHandler, 0, 10),
+		initHandler: make([]InitHandler, 0, 10),
 	}
 }
 
@@ -62,10 +62,10 @@ func Logger(logger log.Logger) ManagerOption {
 }
 
 // 初始化事务处理器函数
-type InitTransactionHandler func(*Orchestrator)
+type InitHandler func(*Orchestrator)
 
-// AddInitTransactionHandler 初始化时立刻添加事务
-func AddInitTransactionHandler(f InitTransactionHandler) ManagerOption {
+// AddInitHandler 初始化时立刻添加事务
+func AddInitHandler(f InitHandler) ManagerOption {
 	return func(m *manager) {
 		m.initHandler = append(m.initHandler, f)
 	}
