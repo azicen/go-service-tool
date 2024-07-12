@@ -9,12 +9,13 @@ import (
 
 // SqlLogger SQL 日志接口的实现
 type SqlLogger struct {
-	l log.Logger
+	*log.Helper
 }
 
 // NewLogger 创建一个新的 LoggerHelper 实例
 func NewLogger(l log.Logger) *SqlLogger {
-	return &SqlLogger{l}
+	h := log.NewHelper(l)
+	return &SqlLogger{h}
 }
 
 func (s *SqlLogger) Log(_ context.Context, level sqldblogger.Level, msg string, data map[string]interface{}) {
@@ -39,5 +40,5 @@ func (s *SqlLogger) Log(_ context.Context, level sqldblogger.Level, msg string, 
 		keyvals = append(keyvals, k, v)
 	}
 
-	s.l.Log(lvl, keyvals...)
+	s.Helper.Log(lvl, keyvals...)
 }
