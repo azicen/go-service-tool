@@ -1,4 +1,4 @@
-package transaction
+package trans
 
 import (
 	"context"
@@ -34,7 +34,7 @@ func GetOrchestratorFromContext(ctx context.Context) *Orchestrator {
 	orch, ok := ctx.Value(OrchestratorContextKey{}).(*Orchestrator)
 	if !ok {
 		// 不应该出现的情况
-		panic("")
+		panic("GetOrchestratorFromContext 不应该出现的情况")
 	}
 	return orch
 }
